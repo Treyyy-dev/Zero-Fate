@@ -186,6 +186,29 @@ export function runSelfTests(RAPIER, CONFIG) {
     return { pass: ok, detail: `y=${p.position.y.toFixed(2)} after 3 s pushing uphill` };
   });
 
+  test('Stays grounded walking down a 20° slope', (make) => {
+    const a = (20 * Math.PI) / 180;
+    const len = 10;
+    const physics = make((w, R) => {
+      const q = { x: Math.sin(a / 2), y: 0, z: 0, w: Math.cos(a / 2) };
+      w.createCollider(
+        R.ColliderDesc.cuboid(3, 0.2, len / 2)
+          .setTranslation(0, (len / 2) * Math.sin(a) - 0.2 * Math.cos(a), -2 - (len / 2) * Math.cos(a))
+          .setRotation(q),
+      );
+    });
+    // Start near the top of the ramp and walk down it (+Z is downhill).
+    const z0 = -2 - len * 0.85 * Math.cos(a);
+    const y0 = len * 0.85 * Math.sin(a) + feet + 0.4;
+    const p = new PlayerController(physics, { x: 0, y: y0, z: z0 }, cfg);
+    physics.world.step();
+    simulate(physics, p, 1);
+    let airborne = 0;
+    simulate(physics, p, 1.6, { move: FORWARD, yaw: Math.PI, onStep: (pl) => { if (!pl.grounded) airborne++; } });
+    const ok = airborne <= 6 && p.position.z > -3;
+    return { pass: ok, detail: `airborne ${airborne}/96 ticks, ended z=${p.position.z.toFixed(2)} y=${p.position.y.toFixed(2)}` };
+  });
+
   const passed = results.filter((r) => r.pass).length;
   return { passed, total: results.length, results };
 }
