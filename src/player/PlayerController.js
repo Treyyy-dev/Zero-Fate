@@ -16,6 +16,8 @@ const _right = new THREE.Vector3();
 const _wish = new THREE.Vector3();
 const _desired = new THREE.Vector3();
 const _move = new THREE.Vector3();
+const _probe = new THREE.Vector3();
+const _settle = new THREE.Vector3();
 const NO_OPTS = Object.freeze({});
 
 /**
@@ -171,7 +173,7 @@ export class PlayerController extends Emitter {
       this.velocity.y = Math.max(-3, Math.min(3, (targetY - this.position.y) * 4));
       this.jumpBufferTimer = 0;
     } else if (this.grounded && !jumped) {
-      this.velocity.y = -cfg.groundStickVelocity;
+      this.velocity.y = 0; // the settle pass below keeps us on the ground
     } else {
       const g = this.velocity.y < 0 ? cfg.gravity * cfg.fallGravityMultiplier : cfg.gravity;
       this.velocity.y = Math.max(this.velocity.y + g * dt, -cfg.maxFallSpeed);
@@ -187,11 +189,26 @@ export class PlayerController extends Emitter {
     }
 
     // --- Collide & slide ---
+    // Pass 1: the intended motion. While grounded it has no downward component,
+    // because a downward push makes Rapier treat ledges as floor and skip auto-step.
     _desired.copy(this.velocity).multiplyScalar(dt);
     this.controller.computeColliderMovement(this.collider, _desired);
     const computed = this.controller.computedMovement();
     _move.set(computed.x, computed.y, computed.z);
-    const nowGrounded = this.jumpLockTimer > 0 || this.swimming ? false : this.controller.computedGrounded();
+    const groundedPass = this.grounded && !jumped && !this.swimming && this.jumpLockTimer === 0;
+    let nowGrounded;
+    if (groundedPass) {
+      // Pass 2: settle down onto the ground from the new spot (snap-to-ground
+      // extends this down stairs and slopes). This is what reports "grounded".
+      _probe.copy(this.position).add(_move);
+      this.collider.setTranslation(_probe);
+      this.controller.computeColliderMovement(this.collider, _settle.set(0, -cfg.groundProbe, 0));
+      const settle = this.controller.computedMovement();
+      _move.y += settle.y;
+      nowGrounded = this.controller.computedGrounded();
+    } else {
+      nowGrounded = this.jumpLockTimer > 0 || this.swimming ? false : this.controller.computedGrounded();
+    }
 
     // Steep-slope guard: never gain height on ground steeper than the climb limit
     // (auto-step must not let us stair-climb up a cliff).

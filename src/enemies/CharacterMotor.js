@@ -55,15 +55,24 @@ export class CharacterMotor {
     this.prevPosition.copy(this.position);
     this.velocity.x = vx;
     this.velocity.z = vz;
-    if (this.grounded) this.velocity.y = 0; // snap-to-ground keeps us down; a push would block auto-step
+    const wasGrounded = this.grounded;
+    if (wasGrounded) this.velocity.y = 0;
     else this.velocity.y = Math.max(this.velocity.y - 30 * dt, -40);
+    // Pass 1: intended motion (no downward push while grounded, so auto-step works).
     this._desired.copy(this.velocity).multiplyScalar(dt);
     this.controller.computeColliderMovement(this.collider, this._desired);
     const mv = this.controller.computedMovement();
-    this.grounded = this.controller.computedGrounded();
     this.position.x += mv.x;
     this.position.y += mv.y;
     this.position.z += mv.z;
+    this.grounded = this.controller.computedGrounded();
+    if (wasGrounded) {
+      // Pass 2: settle onto the ground (and down slopes via snap-to-ground).
+      this.collider.setTranslation(this.position);
+      this.controller.computeColliderMovement(this.collider, { x: 0, y: -0.06, z: 0 });
+      this.position.y += this.controller.computedMovement().y;
+      this.grounded = this.controller.computedGrounded();
+    }
     this.body.setNextKinematicTranslation(this.position);
   }
 
