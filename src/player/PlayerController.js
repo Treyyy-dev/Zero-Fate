@@ -180,13 +180,9 @@ export class PlayerController extends Emitter {
       if (this.inWater && this.velocity.y < -4) this.velocity.y = -4; // water slows falls
     }
 
-    // Snap-to-ground would cancel a jump, so only keep it while not rising.
-    const wantSnap = this.velocity.y <= 0 && this.jumpLockTimer === 0 && !this.swimming;
-    if (wantSnap !== this._snapEnabled) {
-      if (wantSnap) this.controller.enableSnapToGround(cfg.snapDistance);
-      else this.controller.disableSnapToGround();
-      this._snapEnabled = wantSnap;
-    }
+    // Snap-to-ground only runs in the settle pass below: during the main pass it
+    // would pull us back down off a step we just auto-stepped onto.
+    this._setSnap(false);
 
     // --- Collide & slide ---
     // Pass 1: the intended motion. While grounded it has no downward component,
@@ -202,6 +198,7 @@ export class PlayerController extends Emitter {
       // extends this down stairs and slopes). This is what reports "grounded".
       _probe.copy(this.position).add(_move);
       this.collider.setTranslation(_probe);
+      this._setSnap(true);
       this.controller.computeColliderMovement(this.collider, _settle.set(0, -cfg.groundProbe, 0));
       const settle = this.controller.computedMovement();
       _move.y += settle.y;
@@ -259,6 +256,13 @@ export class PlayerController extends Emitter {
     }
 
     if (this.position.y < cfg.killY) this.respawn();
+  }
+
+  _setSnap(on) {
+    if (on === this._snapEnabled) return;
+    if (on) this.controller.enableSnapToGround(this.cfg.snapDistance);
+    else this.controller.disableSnapToGround();
+    this._snapEnabled = on;
   }
 
   _limitSlope(mv) {

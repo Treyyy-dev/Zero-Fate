@@ -205,7 +205,7 @@ export function runSelfTests(RAPIER, CONFIG) {
     simulate(physics, p, 1);
     let airborne = 0;
     simulate(physics, p, 1.6, { move: FORWARD, yaw: Math.PI, onStep: (pl) => { if (!pl.grounded) airborne++; } });
-    const ok = airborne <= 6 && p.position.z > -3;
+    const ok = airborne <= 6 && p.position.z - z0 > 3;
     return { pass: ok, detail: `airborne ${airborne}/96 ticks, ended z=${p.position.z.toFixed(2)} y=${p.position.y.toFixed(2)}` };
   });
 
