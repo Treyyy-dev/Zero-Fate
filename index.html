@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0d1117" />
+    <title>Fatal Zero</title>
+    <link rel="stylesheet" href="./src/styles/main.css" />
+  </head>
+  <body>
+    <!-- The WebGL canvas is injected here by src/core/Renderer.js -->
+    <div id="app"></div>
+
+    <!-- Loading screen (hidden by src/main.js once the world is ready) -->
+    <div id="loading" class="screen">
+      <div class="loading-title">Fatal Zero</div>
+      <div class="loading-sub" id="loading-text">Preparing the realm…</div>
+      <div class="loading-bar"><span id="loading-bar-fill"></span></div>
+    </div>
+
+    <!-- Fatal error screen (WebGL unavailable, physics failed to load, etc.) -->
+    <div id="error" class="screen hidden" role="alert"></div>
+
+    <!-- Desktop only: pointer-lock prompt -->
+    <div id="start-prompt" class="hidden">
+      <div class="start-card">
+        <div class="start-title">Click to play</div>
+        <div class="start-sub">Mouse looks around · Esc releases the cursor</div>
+      </div>
+    </div>
+
+    <!-- Control hints, filled in for desktop or touch by src/main.js -->
+    <div id="controls-hint"></div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

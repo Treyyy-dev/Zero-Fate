@@ -1,0 +1,25 @@
+{
+  "name": "fatal-zero",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Fatal Zero \u2014 a third-person open-world fantasy RPG built with Three.js and Rapier",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node tests/run-tests.js",
+    "cap:sync": "npm run build && npx cap sync android",
+    "android": "npm run cap:sync && npx cap open android"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "0.14.0",
+    "three": "0.170.0",
+    "@capacitor/core": "^6.1.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0",
+    "@capacitor/cli": "^6.1.0",
+    "@capacitor/android": "^6.1.0"
+  }
+}
