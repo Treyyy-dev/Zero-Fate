@@ -18,6 +18,9 @@ const _desired = new THREE.Vector3();
 const _move = new THREE.Vector3();
 const _probe = new THREE.Vector3();
 const _settle = new THREE.Vector3();
+const _stepStart = new THREE.Vector3();
+const _stepPos = new THREE.Vector3();
+const _stepDelta = new THREE.Vector3();
 const NO_OPTS = Object.freeze({});
 
 /**
@@ -192,6 +195,9 @@ export class PlayerController extends Emitter {
     const computed = this.controller.computedMovement();
     _move.set(computed.x, computed.y, computed.z);
     const groundedPass = this.grounded && !jumped && !this.swimming && this.jumpLockTimer === 0;
+    // Blocked while walking on the ground? Try stepping up onto the obstacle.
+    const blockedH = Math.hypot(_desired.x, _desired.z);
+    if (groundedPass && blockedH > 1e-4 && Math.hypot(_move.x, _move.z) < blockedH * 0.5) this._tryStepUp(_desired, _move);
     let nowGrounded;
     if (groundedPass) {
       // Pass 2: settle down onto the ground from the new spot (snap-to-ground
@@ -256,6 +262,44 @@ export class PlayerController extends Emitter {
     }
 
     if (this.position.y < cfg.killY) this.respawn();
+  }
+
+  /**
+   * Step-up: lift by stepHeight, move forward onto the obstacle, settle back
+   * down. Accepted only if we land on ground and gained a step's worth of
+   * height. (Rapier's own auto-step only advances by the current tick's motion,
+   * which at walking speed slides back off the edge.)
+   */
+  _tryStepUp(desired, move) {
+    const cfg = this.cfg;
+    const c = this.controller;
+    const start = _stepStart.copy(this.position);
+    this._setSnap(false);
+    // 1. Up (respects ceilings).
+    this.collider.setTranslation(start);
+    c.computeColliderMovement(this.collider, _stepDelta.set(0, cfg.stepHeight, 0));
+    const up = c.computedMovement().y;
+    if (up < 0.05) return false;
+    // 2. Forward, at least far enough to get the capsule over the edge.
+    const len = Math.hypot(desired.x, desired.z);
+    const dist = Math.max(len, 0.14);
+    _stepPos.copy(start).y += up;
+    this.collider.setTranslation(_stepPos);
+    c.computeColliderMovement(this.collider, _stepDelta.set((desired.x / len) * dist, 0, (desired.z / len) * dist));
+    const f = c.computedMovement();
+    if (Math.hypot(f.x, f.z) < Math.hypot(move.x, move.z) + 0.02) return false;
+    _stepPos.x += f.x;
+    _stepPos.z += f.z;
+    // 3. Back down onto whatever we're standing on now.
+    this.collider.setTranslation(_stepPos);
+    c.computeColliderMovement(this.collider, _stepDelta.set(0, -(up + 0.05), 0));
+    const d = c.computedMovement();
+    if (!c.computedGrounded()) return false;
+    _stepPos.y += d.y;
+    const gain = _stepPos.y - start.y;
+    if (gain < 0.02 || gain > cfg.stepHeight + 0.02) return false;
+    move.subVectors(_stepPos, start);
+    return true;
   }
 
   _setSnap(on) {

@@ -143,6 +143,20 @@ export function runSelfTests(RAPIER, CONFIG) {
     return { pass: onTop, detail: `z=${p.position.z.toFixed(2)} y=${p.position.y.toFixed(2)}` };
   });
 
+  test('Climbs stairs (0.25 m steps)', (make) => {
+    const physics = make((w, R) => {
+      for (let i = 0; i < 6; i++) {
+        const h = (i + 1) * 0.25;
+        box(w, R, 1.5, h / 2, 0.225, 0, h / 2, -2 - i * 0.45 - 0.225);
+      }
+      box(w, R, 1.5, 0.75, 3, 0, 0.75, -2 - 6 * 0.45 - 3); // landing at 1.5 m
+    });
+    const p = spawnSettled(physics, cfg);
+    simulate(physics, p, 4, { move: FORWARD });
+    const ok = p.position.y > 1.5 + feet - 0.08 && p.grounded;
+    return { pass: ok, detail: `y=${p.position.y.toFixed(2)} z=${p.position.z.toFixed(2)} grounded=${p.grounded}` };
+  });
+
   test('Cannot walk up 1.2 m ledge', (make) => {
     const physics = make((w, R) => box(w, R, 2, 0.6, 2, 0, 0.6, -4)); // front face z = −2
     const p = spawnSettled(physics, cfg);
