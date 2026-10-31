@@ -55,7 +55,7 @@ export class CharacterMotor {
     this.prevPosition.copy(this.position);
     this.velocity.x = vx;
     this.velocity.z = vz;
-    if (this.grounded) this.velocity.y = -1.5;
+    if (this.grounded) this.velocity.y = 0; // snap-to-ground keeps us down; a push would block auto-step
     else this.velocity.y = Math.max(this.velocity.y - 30 * dt, -40);
     this._desired.copy(this.velocity).multiplyScalar(dt);
     this.controller.computeColliderMovement(this.collider, this._desired);

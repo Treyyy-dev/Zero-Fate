@@ -27,7 +27,7 @@ export const CONFIG = {
     gravity: -22, // stylised, snappier than real 9.81
     fallGravityMultiplier: 1.6, // heavier on the way down
     maxFallSpeed: 45,
-    groundStickVelocity: 1.5, // small downward push that keeps us glued to slopes
+    groundStickVelocity: 0, // 0: Rapier's snap-to-ground keeps us on slopes; a downward push here breaks auto-step
     coyoteTime: 0.12, // still allowed to jump shortly after leaving a ledge
     jumpBuffer: 0.15, // a jump pressed slightly early still fires on landing
     jumpLockTime: 0.12, // ignore "grounded" right after take-off
